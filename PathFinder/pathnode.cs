@@ -1,4 +1,9 @@
-﻿using System;
+﻿//=========================================================
+// Author   : Richard Chin
+// Date     : November 2017
+//========================================================= 
+
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -9,46 +14,82 @@ namespace PathFinder
 {
 
     /**************************************************************************
+    * Defines a path from one node to another 
+    ***************************************************************************/
+    public class PathLink
+    {
+        public PathLink(float d = 1.0f) => Distance = d;
+
+        private float _distance;
+        public float Distance { get => _distance; set => _distance = value; }
+    }
+
+    /**************************************************************************
     * Represents a node in our system 
     ***************************************************************************/
-    public class aPathNode
+    public class PathNode
     {
-        public aPathNode(int id, int x = 1, int y = 1)
+        // Constructor
+        public PathNode(int id, int x = 1, int y = 1)
         {
             Id = id;
             SetPosition(x, y);
         }
 
-        private Rectangle _boundingRectangle;
-        private Size nodeSize = new Size(25, 25);
+        // Colors
+        public Color colorDefault   = Color.WhiteSmoke;
+        public Color colorSelected  = Color.Gold;
+        public Color colorStartNode = Color.RoyalBlue;
+        public Color colorEndNode   = Color.Crimson;
+        public Color colorVisited   = Color.DimGray;
 
-        // 
-        private HashSet<int> _nodelinks = new HashSet<int>();
+        protected Rectangle _boundingRectangle;
+        protected Size nodeSize = new Size(25, 25);
 
+        // Holds the path links between this node and another
+        // [Key]: Id of attached node
+        // [Value]: path structure
+        protected Dictionary<int, PathLink> _nodePaths = new Dictionary<int, PathLink>();
+
+        // Returns the collection of paths from this node
+        public Dictionary<int, PathLink> NodePaths { get => _nodePaths; }
+
+
+        // ====================================
+        // MAIN PROPERTIES OF OUR NODE
+        // ====================================
 
         // Coordinates of this node 
         public int Id { get; set; }
         public int X { get; set; }
         public int Y { get; set; }
         public Size NodeSize { get => nodeSize; set => nodeSize = value; }
-
         public bool IsSelected { get; set; }
 
-        // readonly 
-        public HashSet<int> NodeLinks {
-            get { return _nodelinks;  }
-        }
+        // Pathfinding
+        public bool StartNode { get; set; } = false;        // 
+        public bool EndNode { get; set; } = false;          // 
+        public bool Visited { get; set; } = false;          // indicates if this node has already been included in the search
+        public float Score { get; set; } = float.MaxValue;  // give the maximum distance score to start
+        public int PreviousNodeId { get; set; } = -1;       // previous node that we came from
 
+
+
+
+
+        /**************************************************************************
+        * recalculates the bounding rectangle for our current location 
+        ***************************************************************************/
         void updateBoundingRect()
         {
             _boundingRectangle = new Rectangle(X - nodeSize.Width / 2, Y - nodeSize.Height / 2, nodeSize.Width, nodeSize.Height);
         }
 
-        public void SetPosition(Point p)
-        {
-            SetPosition(p.X, p.Y);
-        }
 
+        /**************************************************************************
+        * Sets the location of our node on the canvas 
+        ***************************************************************************/
+        public void SetPosition(Point p) { SetPosition(p.X, p.Y); }
         public void SetPosition(int x, int y)
         {
             X = x;
@@ -56,35 +97,64 @@ namespace PathFinder
             updateBoundingRect();
         }
 
+        /**************************************************************************
+        * Returns the location of our position on the canvas 
+        ***************************************************************************/
         public Point GetPosition()
         {
             return new Point(X, Y);
         }
 
-        public bool HasNodeLinks()
+        public bool HasPaths()
         {
-            return (_nodelinks.Count > 0);
+            return (_nodePaths.Count > 0);
         }
 
-        public void DeleteAllLinks()
+        public void DeleteAllPaths()
         {
-            _nodelinks.Clear();
+            _nodePaths.Clear();
         }
 
-        public void AddNodeLink(ref aPathNode n)
-        {
-            AddNodeLink(n.Id);
-        }
 
-        public void AddNodeLink(int id)
+        /**************************************************************************
+        * [A] --> [B]
+        ***************************************************************************/
+        public void AddLinkTo(ref PathNode n, float distance = 1.0F)
         {
-            _nodelinks.Add(id);
+            PathLink newlink = new PathLink(distance);
+
+            //// calculate distance between nodes
+            //float dist = this.X - 
+
+            _nodePaths.Add(n.Id, newlink);
         }
 
         public void DeleteNodeLink(int id)
         {
-            _nodelinks.Remove(id);
+            _nodePaths.Remove(id);
         }
+
+
+        /**************************************************************************
+        * Returns the distance between this node and the given node. 
+        * 
+        * REMARKS:
+        *   The given node *must* be a defined linked node.
+        *   If it is not, then float.MaxValue is returned.
+        ***************************************************************************/
+        public float GetDistanceFrom(ref PathNode b)
+        {
+            PathLink aPath;
+            if (_nodePaths.TryGetValue(b.Id, out aPath))
+                return aPath.Distance;
+
+            // If we are measuring distance to ourself (same node), then return zero.
+            if (this == b)
+                return 0.0f;
+
+            return float.MaxValue;
+        }
+
 
         // test if the given point in within our node
         public bool HitTest(Point p)
@@ -92,22 +162,61 @@ namespace PathFinder
             return _boundingRectangle.Contains(p);
         }
 
-        // Render this node to the given graphic object
+
+        /**************************************************************************
+        * Render this node to the given graphics object 
+        ***************************************************************************/
         public void Draw(ref Graphics g)
         {
-            Pen myPen;
-            if (IsSelected)
-                myPen = new Pen(Color.Gold);
-            else
-                myPen = new Pen(Color.White);
+            // labels
+            // Label graphic objects
+            Font labelFont = new Font("Tahoma", 12.0F);
+            Brush labelBrush = new SolidBrush(Color.Khaki);
 
+            // Initalise pen and its colour
+            // The color will depend on its current state. Lets determine its colour based on state precidence
+            Pen myPen;
+            Color penColor = colorDefault;
+
+            if (EndNode)
+                penColor = colorEndNode;
+
+            if (StartNode)
+                penColor = colorStartNode;
+
+            if (Visited)
+                penColor = colorVisited;
+
+            if (IsSelected)
+                penColor = colorSelected;
+
+            // Draw our node as a circle
+            myPen = new Pen(penColor);
+            myPen.Width = 4.0F;
             g.DrawEllipse(myPen, X - nodeSize.Width / 2, Y - nodeSize.Height / 2, nodeSize.Width, nodeSize.Height);
+
+            // Draw the node's score
+            // Display, just about the bounding rectangle
+            if (this.Score < float.MaxValue)
+            {
+                String label = $"{this.Score:0.#}";
+                SizeF labelSize = g.MeasureString(label, labelFont);
+
+                g.DrawString(label,
+                                labelFont,
+                                labelBrush,
+                                X - (this.nodeSize.Width / 2) - (int)labelSize.Width,
+                                Y - (this.NodeSize.Height / 2) - (int)labelSize.Height - 4);
+            }
+
             myPen.Dispose();
+            labelFont.Dispose();
+            labelBrush.Dispose();
         }
 
         public override bool Equals(object obj)
         {
-            var pathnode = obj as aPathNode;
+            var pathnode = obj as PathNode;
             return pathnode != null &&
                    Id == pathnode.Id;
         }
