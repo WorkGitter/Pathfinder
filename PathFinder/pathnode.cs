@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PathFinder
 {
@@ -16,19 +15,34 @@ namespace PathFinder
     /**************************************************************************
     * Defines a path from one node to another 
     ***************************************************************************/
+    [Serializable]
     public class PathLink
     {
-        public PathLink(float d = 1.0f) => Distance = d;
+        public PathLink()
+        {
+            _distance = 1.0F;
+        }
+        public PathLink(float d = 1.0f)
+        {
+            Distance = d;
+        }
 
         private float _distance;
+
         public float Distance { get => _distance; set => _distance = value; }
     }
 
     /**************************************************************************
     * Represents a node in our system 
     ***************************************************************************/
+    [Serializable]
     public class PathNode
     {
+        public PathNode()
+        {
+            Id = -1;
+        }
+
         // Constructor
         public PathNode(int id, int x = 1, int y = 1)
         {
@@ -49,10 +63,10 @@ namespace PathFinder
         // Holds the path links between this node and another
         // [Key]: Id of attached node
         // [Value]: path structure
-        protected Dictionary<int, PathLink> _nodePaths = new Dictionary<int, PathLink>();
+        protected Dictionary<int, PathLink> _nodeLinks = new Dictionary<int, PathLink>();
 
         // Returns the collection of paths from this node
-        public Dictionary<int, PathLink> NodePaths { get => _nodePaths; }
+        public Dictionary<int, PathLink> NodePaths { get => _nodeLinks; }
 
 
         // ====================================
@@ -105,14 +119,14 @@ namespace PathFinder
             return new Point(X, Y);
         }
 
-        public bool HasPaths()
+        public bool HasLinks()
         {
-            return (_nodePaths.Count > 0);
+            return (_nodeLinks.Count > 0);
         }
 
-        public void DeleteAllPaths()
+        public void DeleteAllLinks()
         {
-            _nodePaths.Clear();
+            _nodeLinks.Clear();
         }
 
 
@@ -121,17 +135,16 @@ namespace PathFinder
         ***************************************************************************/
         public void AddLinkTo(ref PathNode n, float distance = 1.0F)
         {
-            PathLink newlink = new PathLink(distance);
+            // calculate distance between nodes
+            float dist = (float)Math.Sqrt(Math.Abs(this.X - n.X) + Math.Abs(this.Y - n.Y));
+            PathLink newlink = new PathLink(dist);
 
-            //// calculate distance between nodes
-            //float dist = this.X - 
-
-            _nodePaths.Add(n.Id, newlink);
+            _nodeLinks[n.Id] = newlink;
         }
 
         public void DeleteNodeLink(int id)
         {
-            _nodePaths.Remove(id);
+            _nodeLinks.Remove(id);
         }
 
 
@@ -144,8 +157,11 @@ namespace PathFinder
         ***************************************************************************/
         public float GetDistanceFrom(ref PathNode b)
         {
+            if (b == null)
+                return float.MaxValue;
+
             PathLink aPath;
-            if (_nodePaths.TryGetValue(b.Id, out aPath))
+            if (_nodeLinks.TryGetValue(b.Id, out aPath))
                 return aPath.Distance;
 
             // If we are measuring distance to ourself (same node), then return zero.
@@ -170,7 +186,7 @@ namespace PathFinder
         {
             // labels
             // Label graphic objects
-            Font labelFont = new Font("Tahoma", 12.0F);
+            Font labelFont = new Font("Tahoma", 10.0F);
             Brush labelBrush = new SolidBrush(Color.Khaki);
 
             // Initalise pen and its colour
@@ -178,17 +194,18 @@ namespace PathFinder
             Pen myPen;
             Color penColor = colorDefault;
 
+            if (Visited)
+                penColor = colorVisited;
+
             if (EndNode)
                 penColor = colorEndNode;
 
             if (StartNode)
                 penColor = colorStartNode;
 
-            if (Visited)
-                penColor = colorVisited;
-
             if (IsSelected)
                 penColor = colorSelected;
+
 
             // Draw our node as a circle
             myPen = new Pen(penColor);
@@ -199,7 +216,7 @@ namespace PathFinder
             // Display, just about the bounding rectangle
             if (this.Score < float.MaxValue)
             {
-                String label = $"{this.Score:0.#}";
+                String label = $"Id: {this.Id}\r\nScore: {this.Score:0.#}";
                 SizeF labelSize = g.MeasureString(label, labelFont);
 
                 g.DrawString(label,

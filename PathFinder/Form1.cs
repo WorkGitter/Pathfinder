@@ -7,8 +7,12 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -79,16 +83,24 @@ namespace PathFinder
             return null;
         }
 
-         
 
+        /**************************************************************************
+        * Adds the given node to our selected list 
+        ***************************************************************************/
         private void addSelectedItem(ref PathNode node)
         {
+            if (node == null)
+                return;
+
             _selectionNodes.Add(node.Id);
             node.IsSelected = true;
         }
 
         private void removeSelectedItem(ref PathNode node)
         {
+            if (node== null)
+                return;
+
             _selectionNodes.Remove(node.Id);
             node.IsSelected = false;
         }
@@ -103,6 +115,15 @@ namespace PathFinder
                 node.Value.IsSelected = false;
             }
             _selectionNodes.Clear();
+        }
+
+        private void selectAllItems()
+        {
+            foreach (var node in _nodecollection)
+            {
+                node.Value.IsSelected = true;
+                _selectionNodes.Add(node.Value.Id);
+            }
         }
 
 
@@ -124,55 +145,60 @@ namespace PathFinder
             return hittestid;
         }
 
-        // Add a new node
+
+        /**************************************************************************
+        * Handler when the mouse button is pressed. 
+        * 
+        * We use this to :
+        * - select an items (Ctrl+Click)
+        * - Deselect (Whitespace Click)
+        * - Add new node (Shift+Click)
+        * 
+        ***************************************************************************/
         private void pbCanvas_MouseDown(object sender, MouseEventArgs e)
         {
             _mouseposition = e.Location;
 
             if (e.Button == MouseButtons.Left)
             {
-                _mousedown = true;
+                // flag to indicate the mouse button is down
+                _mousedown = true; 
+
+                // No need to continue if the mouse click is outside the bounds of our canvas
                 if (!pbCanvas.ClientRectangle.Contains(e.Location))
                     return;
 
-                // see if we have a hit on any existing nodes
-                int hittestid = HitTest_NodeId(_mouseposition);
 
-                // TODO Describe
+                // Only select the current item, except if the Ctrl key is pressed.
+                // We can use the Ctrl key to multi-select nodes.
+                if (!Control.ModifierKeys.HasFlag(Keys.Control))
+                    clearSelectedItems();
+
+                // Bounds check for any nodes under the mouse position
+                // This returns the id of the node. -1 otherwise.
+                // If we have clicked in any whitespace, then de-select any existing items.
+                int hittestid = HitTest_NodeId(_mouseposition);
+                
+                // We have an item that needs selecting.
                 if (hittestid >= 0)
                 {
-                    clearSelectedItems();
+                    // if no control keys pressed, then select only our item.
+                    if (!Control.ModifierKeys.HasFlag(Keys.Shift))
+                        _actionMovingNode = true;
+
                     PathNode n = _nodecollection[hittestid];
                     addSelectedItem(ref n);
-                    _nodecollection.Remove(hittestid);
-                    _nodecollection.Add(hittestid, n);
-
-                    // if no control keys pressed, then select only our item.
-                    if (!Control.ModifierKeys.HasFlag(Keys.Control))
-                    {
-                        _actionMovingNode = true;
-                        pbCanvas.Invalidate();
-                    }
-
-                    pbCanvas.Invalidate();
-                    return;
                 }
 
-                clearSelectedItems();
-
-                // add new node if Shift Key is pressed
-                if (Control.ModifierKeys.HasFlag(Keys.Shift))
-                {
-                    PathNode newnode = CreateNewNode(e.Location);
-                    _nodecollection.Add(newnode.Id, newnode);
-                }
                 pbCanvas.Invalidate();
             }
 
         } // private void pbCanvas_MouseDown(object sender, MouseEventArgs e)
 
+
         private void pbCanvas_MouseMove(object sender, MouseEventArgs e)
         {
+            // Drawing connecting lines
             if (_actionConnectingPath || (_mousedown && !_actionMovingNode))
             {
                 _actionConnectingPath = true;
@@ -180,15 +206,22 @@ namespace PathFinder
                 pbCanvas.Invalidate();
             }
 
+            // Moving selected items
+            // We could have multiple selected items, so move relative to the current cursor.
             if(_actionMovingNode)
             {
+                int offsetX = e.X - _mouseposition.X;
+                int offsetY = e.Y - _mouseposition.Y;
                 _mouseposition = e.Location;
 
-                if(_selectionNodes.Count == 1)
+                foreach (var selId in _selectionNodes)
                 {
-                    // get node of selected item and update
-                    PathNode n = _nodecollection[_selectionNodes.First()];
-                    n.SetPosition(_mouseposition);
+                    PathNode selNode = _nodecollection[selId];
+                    Point p = selNode.GetPosition();
+                    p.X += offsetX;
+                    p.Y += offsetY;
+
+                    selNode.SetPosition(p);
                     pbCanvas.Invalidate();
                 }
             }
@@ -197,6 +230,7 @@ namespace PathFinder
         private void pbCanvas_MouseUp(object sender, MouseEventArgs e)
         {
             _mousedown = false;
+
             if (_actionConnectingPath)
             {
                 _actionConnectingPath = false;
@@ -230,6 +264,24 @@ namespace PathFinder
             if (_actionMovingNode)
             {
                 _actionMovingNode = false;
+
+                // update path distances of any items that were moved.
+                foreach(var s in _nodecollection)
+                {
+                    PathNode a = s.Value;
+                    foreach(var links in a.NodePaths)
+                    {
+                        PathNode b = GetNodeWithId(links.Key);
+                        if (b == null)
+                            continue;
+
+                        // calculate distance between nodes
+                        float dist = (float)Math.Sqrt(Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y));
+                        links.Value.Distance = dist;
+                    }
+                }
+
+                pbCanvas.Invalidate();
             }
 
         } // pbCanvas_MouseUp
@@ -247,7 +299,7 @@ namespace PathFinder
             Graphics graphics = e.Graphics;
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            Pen pathLinePen = new Pen(Color.LightSteelBlue);
+            Pen pathLinePen = new Pen(Color.WhiteSmoke);
             Pen drawingLinePen = new Pen(Color.Coral);
             Pen solutionLinePen = new Pen(Color.Blue);
 
@@ -257,8 +309,8 @@ namespace PathFinder
             solutionLinePen.Width = 4.0F;
 
             // Label graphic objects
-            Font labelFont = new Font("Tahoma", 12.0F);
-            Brush labelBrush = new SolidBrush(Color.AliceBlue);
+            Font labelFont = new Font("Tahoma", 10.0F);
+            Brush labelBrush = new SolidBrush(Color.LightSeaGreen);
 
 
             // Draw our nodes
@@ -266,14 +318,16 @@ namespace PathFinder
             {
                 // Draw our path lines.
                 // Lets do this first, so that the nodes is drawn over this item.
-                if (node.Value.HasPaths())
+                if (node.Value.HasLinks())
                 {
                     Point a = node.Value.GetPosition();
                     foreach (var aPath in node.Value.NodePaths)
                     {
                         PathNode edge = GetNodeWithId(aPath.Key);
                         if (edge == null)
+                        {
                             continue;
+                        }
 
                         Point b = edge.GetPosition();
                         graphics.DrawLine(pathLinePen, a, b);
@@ -407,9 +461,10 @@ namespace PathFinder
             bool validendnode = false;
             foreach (var n in _nodecollection)
             {
-                n.Value.Visited = false;            // clear visited status
-                n.Value.Score = float.MaxValue;     // reset score
-                _unvisitedNodesSet.Add(n.Key);      // populate unvisited collection set
+                n.Value.Visited         = false;            // clear visited status
+                n.Value.Score           = float.MaxValue;   // reset score
+                n.Value.PreviousNodeId  = -1;               // reset our solution path link
+                _unvisitedNodesSet.Add(n.Key);              // populate unvisited collection set
 
                 if (n.Key == _startNodeId)
                     validstartnode = true;
@@ -447,7 +502,10 @@ namespace PathFinder
                 foreach (var p in Anode.NodePaths)
                 {
                     PathNode Bnode = GetNodeWithId(p.Key);
-                    float newScore = Anode.GetDistanceFrom(ref Bnode);
+                    if(Bnode == null)
+                        continue;
+
+                    float newScore = Anode.GetDistanceFrom(ref Bnode) + Anode.Score;
 
                     // update this node to the new score
                     if (Bnode.Score > newScore)
@@ -487,5 +545,150 @@ namespace PathFinder
 
         } //DIJKSTRAToolStripMenuItem_Click
 
+
+
+        /**************************************************************************
+        * Save state to a binary file 
+        ***************************************************************************/
+        private void saveToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var dlg = new SaveFileDialog();
+            dlg.Filter = "PathFinder File (*.path)|*.path";
+            if (dlg.ShowDialog() != DialogResult.OK)
+                return;
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (var filestream = new FileStream(dlg.FileName, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                try
+                {
+                    formatter.Serialize(filestream, _nodecollection);
+                }
+                catch (SerializationException ex)
+                {
+                    MessageBox.Show($"Failed to save. Reason:{ex.Message}");
+                    return;
+                }
+            }
+        }
+
+
+        /**************************************************************************
+        * Restore from a previously saved binary file 
+        ***************************************************************************/
+        private void openToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var dlg = new OpenFileDialog();
+            dlg.Filter = "PathFinder File (*.path)|*.path";
+            if (dlg.ShowDialog() != DialogResult.OK)
+                return;
+
+            BinaryFormatter formatter = new BinaryFormatter();
+            using (var filestream = new FileStream(dlg.FileName, FileMode.Open, FileAccess.Read, FileShare.None))
+            {
+                try
+                {
+                    _nodecollection = (Dictionary<int, PathNode>)formatter.Deserialize(filestream);
+                }
+                catch (SerializationException ex)
+                {
+                    MessageBox.Show($"Failed to open. Reason:{ex.Message}");
+                    return;
+                }
+            }
+
+            resetNodeStates();
+            clearSelectedItems();
+            pbCanvas.Invalidate();
+        }
+
+
+        /**************************************************************************
+        * Deletes the selected nodes 
+        ***************************************************************************/
+        private void deleteToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            deleteSelectedNodes();
+        }
+
+        private void deletePathToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            foreach (var selid in _selectionNodes)
+            {
+                PathNode node = GetNodeWithId(selid);
+                node.DeleteAllLinks();
+            }
+            pbCanvas.Invalidate();
+        }
+
+        /**************************************************************************
+        * Inserts a new node 
+        * Keyboard shortcut - INS
+        ***************************************************************************/
+        private void insertNewNodeToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            insertNewNode();
+        }
+
+
+        /**************************************************************************
+        * Insert a new node to the canvas 
+        ***************************************************************************/
+        private void insertNewNode()
+        {
+            // Add new node to the centre of the canvas. But we can be a bit more clever
+            // than that. To prevent obscuring an existing item, lets shift to a new position
+            // if it is occupied.
+            Point p = new Point(pbCanvas.Width / 2, pbCanvas.Height / 2);
+            int hittest = HitTest_NodeId(p);
+            while(hittest >= 0)
+            {
+                p.Offset(25, 25);
+                hittest = HitTest_NodeId(p);
+            }
+
+            // Add to canvas
+            clearSelectedItems();
+            PathNode newnode = CreateNewNode(p);
+            _nodecollection.Add(newnode.Id, newnode);
+            addSelectedItem(ref newnode);
+            pbCanvas.Invalidate();
+        }
+
+
+        /**************************************************************************
+        * Delete selected nodes 
+        ***************************************************************************/
+        private void deleteSelectedNodes()
+        {
+            foreach (var selid in _selectionNodes)
+                _nodecollection.Remove(selid);
+
+            clearSelectedItems();
+            pbCanvas.Invalidate();
+        }
+
+        private void Form1_KeyUp(object sender, KeyEventArgs e)
+        {
+            switch (e.KeyCode)
+            {
+                case Keys.Insert:
+                    insertNewNode();
+                    break;
+                case Keys.Delete:
+                    deleteSelectedNodes();
+                    break;
+                case Keys.A:
+                    if (Control.ModifierKeys.HasFlag(Keys.Control))
+                    { // select all 
+                        selectAllItems();
+                        pbCanvas.Invalidate();
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
     }
+
 }
