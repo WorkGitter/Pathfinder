@@ -363,12 +363,17 @@ namespace PathFinder
             if(_endNodeId >=0)
             {
                 PathNode currentnode = GetNodeWithId(_endNodeId);
-                while(currentnode.PreviousNodeId >=0)
+                if (currentnode != null)
                 {
-                    PathNode prevNode = GetNodeWithId(currentnode.PreviousNodeId);
-                    graphics.DrawLine(solutionLinePen, prevNode.GetPosition(), currentnode.GetPosition());
+                    while (currentnode.PreviousNodeId >= 0)
+                    {
+                        PathNode prevNode = GetNodeWithId(currentnode.PreviousNodeId);
+                        if (prevNode == null)
+                            break;
 
-                    currentnode = prevNode;
+                        graphics.DrawLine(solutionLinePen, prevNode.GetPosition(), currentnode.GetPosition());
+                        currentnode = prevNode;
+                    }
                 }
             }
 
@@ -380,6 +385,9 @@ namespace PathFinder
                 foreach (var startnodeid in _selectionNodes)
                 {
                     PathNode startnode = _nodecollection[startnodeid];
+                    if (startnode == null)
+                        continue;
+
                     graphics.DrawLine(drawingLinePen, startnode.GetPosition(), _mouseposition);
                 }
             }
@@ -689,6 +697,47 @@ namespace PathFinder
                     break;
             }
         }
+
+
+        /**************************************************************************
+        * Generate square grid 
+        ***************************************************************************/
+        private void generateGridToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int x = pbCanvas.Width;
+            int y = pbCanvas.Height;
+            //int yoffset = y / 25;
+            //int xoffset = x / 25;
+
+
+            PathNode anode = new PathNode();
+            int offset = anode.NodeSize.Height + 50;
+
+            int nX = offset;
+            int nY = offset;
+            PathNode prevnode = null;
+            while (nY < y)
+            {
+                nX = offset;
+                while (nX < x)
+                {
+                    PathNode newnode = CreateNewNode(nX, nY);
+                    _nodecollection.Add(newnode.Id, newnode);
+
+                    if(prevnode != null)
+                    {
+                        newnode.AddLinkTo(ref prevnode);
+                        prevnode.AddLinkTo(ref newnode);
+                    }
+                    prevnode = newnode;
+
+                    nX += offset;
+                }
+                nY += offset;
+            }
+
+            pbCanvas.Invalidate();
+        } // generateGridToolStripMenuItem_Click
     }
 
 }
