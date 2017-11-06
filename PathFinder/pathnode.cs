@@ -11,25 +11,45 @@ using System.Text;
 
 namespace PathFinder
 {
-
     /**************************************************************************
-    * Defines a path from one node to another 
+    * Link between two nodes 
     ***************************************************************************/
     [Serializable]
-    public class PathLink
+    public class NodeLink
     {
-        public PathLink()
+        public enum DirectionType
         {
-            _distance = 1.0F;
-        }
-        public PathLink(float d = 1.0f)
-        {
-            Distance = d;
+            biDirectional,
+            uniDirectional
         }
 
-        private float _distance;
+        public NodeLink()
+        {
+            StartNodeId = EndNodeId = -1;
+            Distance = 1.0F;
+            Direction = DirectionType.biDirectional;
+        }
 
-        public float Distance { get => _distance; set => _distance = value; }
+        public int StartNodeId { get; set; }
+        public int EndNodeId { get; set; }
+        public float Distance { get; set; }
+        public DirectionType Direction { get; set; }
+
+        public override bool Equals(object obj)
+        {
+            var link = obj as NodeLink;
+            return link != null &&
+                   StartNodeId == link.StartNodeId &&
+                   EndNodeId == link.EndNodeId;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 1961402845;
+            hashCode = hashCode * -1521134295 + StartNodeId.GetHashCode();
+            hashCode = hashCode * -1521134295 + EndNodeId.GetHashCode();
+            return hashCode;
+        }
     }
 
     /**************************************************************************
@@ -60,15 +80,6 @@ namespace PathFinder
         protected Rectangle _boundingRectangle;
         protected Size nodeSize = new Size(25, 25);
 
-        // Holds the path links between this node and another
-        // [Key]: Id of attached node
-        // [Value]: path structure
-        protected Dictionary<int, PathLink> _nodeLinks = new Dictionary<int, PathLink>();
-
-        // Returns the collection of paths from this node
-        public Dictionary<int, PathLink> NodePaths { get => _nodeLinks; }
-
-
         // ====================================
         // MAIN PROPERTIES OF OUR NODE
         // ====================================
@@ -86,8 +97,6 @@ namespace PathFinder
         public bool Visited { get; set; } = false;          // indicates if this node has already been included in the search
         public float Score { get; set; } = float.MaxValue;  // give the maximum distance score to start
         public int PreviousNodeId { get; set; } = -1;       // previous node that we came from
-
-
 
 
 
@@ -118,60 +127,7 @@ namespace PathFinder
         {
             return new Point(X, Y);
         }
-
-        public bool HasLinks()
-        {
-            return (_nodeLinks.Count > 0);
-        }
-
-        public void DeleteAllLinks()
-        {
-            _nodeLinks.Clear();
-        }
-
-
-        /**************************************************************************
-        * [A] --> [B]
-        ***************************************************************************/
-        public void AddLinkTo(ref PathNode n, float distance = 1.0F)
-        {
-            // calculate distance between nodes
-            float dist = (float)Math.Sqrt(Math.Abs(this.X - n.X) + Math.Abs(this.Y - n.Y));
-            PathLink newlink = new PathLink(dist);
-
-            _nodeLinks[n.Id] = newlink;
-        }
-
-        public void DeleteNodeLink(int id)
-        {
-            _nodeLinks.Remove(id);
-        }
-
-
-        /**************************************************************************
-        * Returns the distance between this node and the given node. 
-        * 
-        * REMARKS:
-        *   The given node *must* be a defined linked node.
-        *   If it is not, then float.MaxValue is returned.
-        ***************************************************************************/
-        public float GetDistanceFrom(ref PathNode b)
-        {
-            if (b == null)
-                return float.MaxValue;
-
-            PathLink aPath;
-            if (_nodeLinks.TryGetValue(b.Id, out aPath))
-                return aPath.Distance;
-
-            // If we are measuring distance to ourself (same node), then return zero.
-            if (this == b)
-                return 0.0f;
-
-            return float.MaxValue;
-        }
-
-
+        
         // test if the given point in within our node
         public bool HitTest(Point p)
         {

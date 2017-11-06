@@ -21,8 +21,15 @@ namespace PathFinder
 {
     public partial class Form1 : Form
     {
+        // main collection of nodes
+        // [node id] --> [node structure]
         private int _nextkeyid = 0;
         private Dictionary<int, PathNode> _nodecollection = new Dictionary<int, PathNode>();
+
+        // main collection of node links
+        // [src-trgt node id pair] --> [link object]
+        private Dictionary<KeyValuePair<int, int>, NodeLink> _linkcollection = new Dictionary<KeyValuePair<int, int>, NodeLink>();
+
 
         // mouse movement
         private bool _mousedown = false;
@@ -195,7 +202,6 @@ namespace PathFinder
 
         } // private void pbCanvas_MouseDown(object sender, MouseEventArgs e)
 
-
         private void pbCanvas_MouseMove(object sender, MouseEventArgs e)
         {
             // Drawing connecting lines
@@ -231,9 +237,11 @@ namespace PathFinder
         {
             _mousedown = false;
 
+            // We need to create and define a path link between our active nodes
             if (_actionConnectingPath)
             {
                 _actionConnectingPath = false;
+
                 // see if we have a hit on any existing nodes
                 int hittestid = -1;
                 foreach (var node in _nodecollection)
@@ -245,47 +253,35 @@ namespace PathFinder
                     }
                 }
 
+                // If we have a hit. We need to create a new link between the two
                 if (hittestid >= 0)
                 {
-                    // TODO: Wrap in safe function
-                    PathNode endnode = _nodecollection[hittestid];
-
-                    // add our edge node to our selection
                     foreach (var startnodeid in _selectionNodes)
                     {
-                        PathNode startnode = _nodecollection[startnodeid];
-                        startnode.AddLinkTo(ref endnode);
+                        addLinksForNode(startnodeid, hittestid);
                     }
                 }
 
                 pbCanvas.Invalidate();
-            }
+            } // if (_actionConnectingPath)
 
+
+            // MOVE
+            // For items that have been moved, we need to update the distances for any links.
             if (_actionMovingNode)
             {
                 _actionMovingNode = false;
 
                 // update path distances of any items that were moved.
-                foreach(var s in _nodecollection)
+                foreach (var startnodeid in _selectionNodes)
                 {
-                    PathNode a = s.Value;
-                    foreach(var links in a.NodePaths)
-                    {
-                        PathNode b = GetNodeWithId(links.Key);
-                        if (b == null)
-                            continue;
-
-                        // calculate distance between nodes
-                        float dist = (float)Math.Sqrt(Math.Abs(a.X - b.X) + Math.Abs(a.Y - b.Y));
-                        links.Value.Distance = dist;
-                    }
+                    updateLinkDistancesForNode(startnodeid);
                 }
 
                 pbCanvas.Invalidate();
-            }
+            } // if (_actionMovingNode)
 
         } // pbCanvas_MouseUp
-
 
 
         /**************************************************************************
@@ -301,7 +297,7 @@ namespace PathFinder
 
             Pen pathLinePen = new Pen(Color.WhiteSmoke);
             Pen drawingLinePen = new Pen(Color.Coral);
-            Pen solutionLinePen = new Pen(Color.Blue);
+            Pen solutionLinePen = new Pen(Color.RoyalBlue);
 
             pathLinePen.EndCap = System.Drawing.Drawing2D.LineCap.ArrowAnchor;
             pathLinePen.Width = 3.0F;
@@ -313,51 +309,41 @@ namespace PathFinder
             Brush labelBrush = new SolidBrush(Color.LightSeaGreen);
 
 
+            // Draw the node link lines
+            foreach(var link in _linkcollection)
+            {
+                PathNode sN = GetNodeWithId(link.Value.StartNodeId);
+                PathNode eN = GetNodeWithId(link.Value.EndNodeId);
+                if ((sN == null) || (eN == null))
+                    continue;
+
+                graphics.DrawLine(pathLinePen, sN.GetPosition(), eN.GetPosition());
+
+                // Draws the path label. This will be the distance between nodes, as stored in the label.
+                // We want our string to be positions midway between the nodes.
+                //
+                // (b)
+                //    \[label]
+                //     \
+                //     (a)
+                // 
+                String label = $"{link.Value.Distance:0.#}";
+                SizeF labelSize = graphics.MeasureString(label, labelFont);
+
+                int midX = Math.Abs(eN.X - sN.X) / 2 + Math.Min(sN.X, eN.X);
+                int midY = Math.Abs(eN.Y - sN.Y) / 2 + Math.Min(sN.Y, eN.Y);
+                Point labelPoint = new Point(midX - (int)labelSize.Width, midY - (int)labelSize.Height);
+
+                graphics.DrawString(label, labelFont, labelBrush, labelPoint);
+            }
+
             // Draw our nodes
             foreach (var node in _nodecollection)
             {
-                // Draw our path lines.
-                // Lets do this first, so that the nodes is drawn over this item.
-                if (node.Value.HasLinks())
-                {
-                    Point a = node.Value.GetPosition();
-                    foreach (var aPath in node.Value.NodePaths)
-                    {
-                        PathNode edge = GetNodeWithId(aPath.Key);
-                        if (edge == null)
-                        {
-                            continue;
-                        }
-
-                        Point b = edge.GetPosition();
-                        graphics.DrawLine(pathLinePen, a, b);
-
-                        // Draws the path label. This will be the distance between nodes, as stored in the label.
-                        // We want our string to be positions midway between the nodes.
-                        //
-                        // (b)
-                        //    \[label]
-                        //     \
-                        //     (a)
-                        // 
-                        String label = $"{aPath.Value.Distance:0.#}";
-                        SizeF labelSize = graphics.MeasureString(label, labelFont);
-
-                        int midX = Math.Abs(b.X - a.X) / 2 + Math.Min(a.X, b.X);
-                        int midY = Math.Abs(b.Y - a.Y) / 2 + Math.Min(a.Y, b.Y);
-                        Point labelPoint = new Point(midX - (int)labelSize.Width, midY - (int)labelSize.Height);
-
-                        graphics.DrawString(label, labelFont, labelBrush, labelPoint);
-                    }
-                }
-
-                // finally, draw the node
                 node.Value.Draw(ref graphics);
+            }
 
-            } // foreach (var node in _nodecollection)
-
-
-            // SOLUTION 
+            // SOLUTION PATH LINK
             // If we have a solution path, then draw the lines here, using a different 
             // colour ?
             if(_endNodeId >=0)
@@ -449,6 +435,7 @@ namespace PathFinder
         ***************************************************************************/
         private void ToolStripMenuItemCLEAR_Click(object sender, EventArgs e)
         {
+            clearAllLinks();
             clearSelectedItems();
 
             _nextkeyid = 0;
@@ -499,33 +486,46 @@ namespace PathFinder
 
             // Start at the beginning.
             // The start node will always have a distance of 0 to itself.
-            PathNode Anode = _nodecollection[_startNodeId];
-            Anode.Score = 0;
+            PathNode startNode = _nodecollection[_startNodeId];
+            startNode.Score = 0;
 
             bool finished = false;
             while(!finished)
             {
                 // For all our branch paths from our test node, calculate the 
                 // distance score. If the score is less than current, then replace.
-                foreach (var p in Anode.NodePaths)
+                foreach (var p in _linkcollection.Where( p => (p.Key.Key == startNode.Id) || (p.Key.Value == startNode.Id) ).Select( r => r.Value))
                 {
-                    PathNode Bnode = GetNodeWithId(p.Key);
-                    if(Bnode == null)
+                    // Check the direction of our link.
+                    // If it is flows both ways, then its ok.
+                    // If it flows against the direction that we are moving, then skip.
+                    if (!((p.Direction == NodeLink.DirectionType.biDirectional) || (p.StartNodeId == startNode.Id)))
                         continue;
 
-                    float newScore = Anode.GetDistanceFrom(ref Bnode) + Anode.Score;
+                    // The ids of our source and destination nodes can be either of the two id properties.
+                    // Figure out which one is our active node, and then assign the other to our variable.
+                    // [a] <-------> [b]
+                    int endNodeId = p.EndNodeId;
+                    if (endNodeId == startNode.Id)
+                        endNodeId = p.StartNodeId;
+
+                    PathNode endNode = GetNodeWithId(endNodeId);
+                    if(endNode == null)
+                        continue;
+
+                    float newScore = p.Distance + startNode.Score;
 
                     // update this node to the new score
-                    if (Bnode.Score > newScore)
+                    if (endNode.Score > newScore)
                     {
-                        Bnode.Score = newScore;             // update to smaller score
-                        Bnode.PreviousNodeId = Anode.Id;    // add link to the path we came from
+                        endNode.Score = newScore;             // update to smaller score
+                        endNode.PreviousNodeId = startNode.Id;    // add link to the path we came from
                     }
                 }
 
                 // remove this node from our visited list
-                _unvisitedNodesSet.Remove(Anode.Id);
-                Anode.Visited = true;
+                _unvisitedNodesSet.Remove(startNode.Id);
+                startNode.Visited = true;
                 if (_unvisitedNodesSet.Count == 0)
                     finished = true;
 
@@ -537,7 +537,7 @@ namespace PathFinder
                     PathNode pn = GetNodeWithId(s);
                     if(pn.Score < minScore)
                     {
-                        Anode = pn;
+                        startNode = pn;
                         minScore = pn.Score;
                     }
                 }
@@ -623,8 +623,7 @@ namespace PathFinder
         {
             foreach (var selid in _selectionNodes)
             {
-                PathNode node = GetNodeWithId(selid);
-                node.DeleteAllLinks();
+                deleteLinksForNode(selid);
             }
             pbCanvas.Invalidate();
         }
@@ -724,11 +723,11 @@ namespace PathFinder
                     PathNode newnode = CreateNewNode(nX, nY);
                     _nodecollection.Add(newnode.Id, newnode);
 
-                    if(prevnode != null)
+                    if (prevnode != null)
                     {
-                        newnode.AddLinkTo(ref prevnode);
-                        prevnode.AddLinkTo(ref newnode);
+                        /// TODO
                     }
+
                     prevnode = newnode;
 
                     nX += offset;
@@ -738,6 +737,101 @@ namespace PathFinder
 
             pbCanvas.Invalidate();
         } // generateGridToolStripMenuItem_Click
-    }
+
+
+
+        #region NODE LINK MANAGEMENT
+
+        /// <summary>
+        /// Remove all currently defined node links
+        /// </summary>
+        private void clearAllLinks()
+        {
+            _linkcollection.Clear();
+        }
+
+        /// <summary>
+        /// removes any link paths for the given node
+        /// </summary>
+        /// <remarks>Dictionary<KeyValuePair<int, int>, NodeLink></remarks>
+        /// <param name="nodeid">node id</param>
+        private void deleteLinksForNode(int nodeid)
+        {
+            // use LINQ to get a list of any links that has attachment to this node.
+            foreach(var n in _linkcollection.Where( p => (p.Key.Key == nodeid) || (p.Key.Value == nodeid) ).ToList())
+            {
+                _linkcollection.Remove(n.Key);
+            }
+        }
+
+        /// <summary>
+        /// calculates the distance between two given nodes
+        /// </summary>
+        /// <remarks>uses pythagorus's theorem</remarks>
+        /// <param name="a"></param>
+        /// <param name="b"></param>
+        /// <returns></returns>
+        private float calculateDistanceBetweenNodes(PathNode a, PathNode b)
+        {
+            int width = Math.Abs(a.X - b.X);
+            int height = Math.Abs(a.Y - b.Y);
+
+            return (float)Math.Sqrt( width * width + height * height);
+        }
+
+        /// <summary>
+        /// add a link to two nodes
+        /// </summary>
+        /// <param name="startnodeid"></param>
+        /// <param name="endnodeid"></param>
+        private void addLinksForNode(int startnodeid, int endnodeid)
+        {
+            // get the nodes, so we can calculate the distance between
+            PathNode a = GetNodeWithId(startnodeid);
+            PathNode b = GetNodeWithId(endnodeid);
+            if ((a == null) || (b == null))
+                return;
+
+            float dist = calculateDistanceBetweenNodes(a, b);
+            NodeLink newlink = new NodeLink();
+            newlink.StartNodeId = startnodeid;
+            newlink.EndNodeId = endnodeid;
+            newlink.Distance = dist;
+
+            // Add to collection
+            // use the [] operator to prevent any exception thrown. If we have duplicates, then
+            // ok with overwriting the previous.
+            _linkcollection[ new KeyValuePair<int, int>(startnodeid, endnodeid) ] = newlink;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="startnodeid"></param>
+        private void updateLinkDistancesForNode(int startnodeid)
+        {
+            NodeLink a = null;
+            var nodecollection = _linkcollection.Where(p => (p.Key.Key == startnodeid) || (p.Key.Value == startnodeid)).Select( k => k.Key).ToList();
+
+            foreach (var n in nodecollection)
+            {
+                if (!_linkcollection.TryGetValue(n, out a))
+                    continue;
+
+                PathNode s = GetNodeWithId(a.StartNodeId);
+                PathNode e = GetNodeWithId(a.EndNodeId);
+                float dist = calculateDistanceBetweenNodes(s, e);
+
+                // update this link's distance
+                a.Distance = dist;
+            }
+        }
+
+        #endregion
+
+
+
+
+    } // class Form1
 
 }
