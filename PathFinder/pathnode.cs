@@ -72,7 +72,7 @@ namespace PathFinder
 
         // Colors
         public Color colorDefault   = Color.WhiteSmoke;
-        public Color colorSelected  = Color.Gold;
+        public Color colorSelected  = Color.FromArgb(255, 192, 0);
         public Color colorStartNode = Color.RoyalBlue;
         public Color colorEndNode   = Color.Crimson;
         public Color colorVisited   = Color.DimGray;
@@ -90,6 +90,9 @@ namespace PathFinder
         public int Y { get; set; }
         public Size NodeSize { get => nodeSize; set => nodeSize = value; }
         public bool IsSelected { get; set; }
+
+        // Returns the bounding rectangle of this node
+        public Rectangle BoundingRect { get { return _boundingRectangle;  } }
 
         // Pathfinding
         public bool StartNode { get; set; } = false;        // 
@@ -138,7 +141,7 @@ namespace PathFinder
         /**************************************************************************
         * Render this node to the given graphics object 
         ***************************************************************************/
-        public void Draw(ref Graphics g)
+        public void Draw(ref Graphics g, bool showlabels = true)
         {
             // labels
             // Label graphic objects
@@ -170,16 +173,19 @@ namespace PathFinder
 
             // Draw the node's score
             // Display, just about the bounding rectangle
-            if (this.Score < float.MaxValue)
+            if (showlabels)
             {
-                String label = $"Id: {this.Id}\r\nScore: {this.Score:0.#}";
-                SizeF labelSize = g.MeasureString(label, labelFont);
+                if (this.Score < float.MaxValue)
+                {
+                    String label = $"Id: {this.Id}\r\nScore: {this.Score:0.#}";
+                    SizeF labelSize = g.MeasureString(label, labelFont);
 
-                g.DrawString(label,
-                                labelFont,
-                                labelBrush,
-                                X - (this.nodeSize.Width / 2) - (int)labelSize.Width,
-                                Y - (this.NodeSize.Height / 2) - (int)labelSize.Height - 4);
+                    g.DrawString(label,
+                                    labelFont,
+                                    labelBrush,
+                                    X - (this.nodeSize.Width / 2) - (int)labelSize.Width,
+                                    Y - (this.NodeSize.Height / 2) - (int)labelSize.Height - 4);
+                }
             }
 
             myPen.Dispose();

@@ -51,6 +51,10 @@
             this.aToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.generateGridToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.showLabelsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).BeginInit();
             this.pbContextMenu.SuspendLayout();
             this.menubar.SuspendLayout();
@@ -69,6 +73,7 @@
             this.pbCanvas.TabIndex = 0;
             this.pbCanvas.TabStop = false;
             this.pbCanvas.Paint += new System.Windows.Forms.PaintEventHandler(this.pbCanvas_Paint);
+            this.pbCanvas.DoubleClick += new System.EventHandler(this.pbCanvas_DoubleClick);
             this.pbCanvas.MouseDown += new System.Windows.Forms.MouseEventHandler(this.pbCanvas_MouseDown);
             this.pbCanvas.MouseMove += new System.Windows.Forms.MouseEventHandler(this.pbCanvas_MouseMove);
             this.pbCanvas.MouseUp += new System.Windows.Forms.MouseEventHandler(this.pbCanvas_MouseUp);
@@ -164,7 +169,8 @@
             this.menubar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.fileToolStripMenuItem,
             this.actionToolStripMenuItem,
-            this.toolsToolStripMenuItem});
+            this.toolsToolStripMenuItem,
+            this.optionsToolStripMenuItem});
             this.menubar.Location = new System.Drawing.Point(0, 0);
             this.menubar.Name = "menubar";
             this.menubar.Size = new System.Drawing.Size(884, 24);
@@ -198,7 +204,9 @@
             // 
             this.actionToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.dijkstraToolStripMenuItem,
-            this.aToolStripMenuItem});
+            this.aToolStripMenuItem,
+            this.toolStripSeparator5,
+            this.refreshToolStripMenuItem});
             this.actionToolStripMenuItem.Name = "actionToolStripMenuItem";
             this.actionToolStripMenuItem.Size = new System.Drawing.Size(54, 20);
             this.actionToolStripMenuItem.Text = "Action";
@@ -206,17 +214,18 @@
             // dijkstraToolStripMenuItem
             // 
             this.dijkstraToolStripMenuItem.Name = "dijkstraToolStripMenuItem";
-            this.dijkstraToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.dijkstraToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.dijkstraToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F3;
+            this.dijkstraToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.dijkstraToolStripMenuItem.Text = "Dijkstra";
             this.dijkstraToolStripMenuItem.Click += new System.EventHandler(this.DIJKSTRAToolStripMenuItem_Click);
             // 
             // aToolStripMenuItem
             // 
-            this.aToolStripMenuItem.Enabled = false;
             this.aToolStripMenuItem.Name = "aToolStripMenuItem";
-            this.aToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.aToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F4;
+            this.aToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
             this.aToolStripMenuItem.Text = "A*";
+            this.aToolStripMenuItem.Click += new System.EventHandler(this.ASTAR_ToolStripMenuItem_Click);
             // 
             // toolsToolStripMenuItem
             // 
@@ -232,6 +241,36 @@
             this.generateGridToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
             this.generateGridToolStripMenuItem.Text = "Generate Grid...";
             this.generateGridToolStripMenuItem.Click += new System.EventHandler(this.generateGridToolStripMenuItem_Click);
+            // 
+            // optionsToolStripMenuItem
+            // 
+            this.optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.showLabelsToolStripMenuItem});
+            this.optionsToolStripMenuItem.Name = "optionsToolStripMenuItem";
+            this.optionsToolStripMenuItem.Size = new System.Drawing.Size(61, 20);
+            this.optionsToolStripMenuItem.Text = "Options";
+            // 
+            // showLabelsToolStripMenuItem
+            // 
+            this.showLabelsToolStripMenuItem.Checked = true;
+            this.showLabelsToolStripMenuItem.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.showLabelsToolStripMenuItem.Name = "showLabelsToolStripMenuItem";
+            this.showLabelsToolStripMenuItem.Size = new System.Drawing.Size(139, 22);
+            this.showLabelsToolStripMenuItem.Text = "Show Labels";
+            this.showLabelsToolStripMenuItem.Click += new System.EventHandler(this.showLabelsToolStripMenuItem_Click);
+            // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(149, 6);
+            // 
+            // refreshToolStripMenuItem
+            // 
+            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Text = "Refresh";
+            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -280,6 +319,10 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator1;
         private System.Windows.Forms.ToolStripMenuItem toolsToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem generateGridToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem optionsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem showLabelsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
+        private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
     }
 }
 
