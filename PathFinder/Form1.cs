@@ -168,7 +168,17 @@ namespace PathFinder
             return hittestid;
         }
 
-
+        private NodeLink HitTest_Link(Point p)
+        {
+            NodeLink hit = null;
+            foreach(var link in _linkcollection)
+            {
+                if (link.Value.HitTest(p))
+                    return link.Value;
+            }
+            return hit;
+        }
+        
         /**************************************************************************
         * Handler when the mouse button is pressed. 
         * 
@@ -484,6 +494,43 @@ namespace PathFinder
 
 
         /**************************************************************************
+        * Calculates and displays the travelled distance for our solution path 
+        ***************************************************************************/
+        private void DisplayResult()
+        {
+            float totaldistance = 0;
+            if (_endNodeId >= 0)
+            {
+                PathNode currentnode = GetNodeWithId(_endNodeId);
+                if (currentnode != null)
+                {
+                    while (currentnode.PreviousNodeId >= 0)
+                    {
+                        // Quite liking the power of Linq, so using it here to get the distance from the link
+                        // between the current node and previous node.
+                        float dist = _linkcollection.Where(
+                                p =>
+                               ((p.Key.Key == currentnode.Id) && (p.Key.Value == currentnode.PreviousNodeId)) ||
+                               ((p.Key.Key == currentnode.PreviousNodeId) && (p.Key.Value == currentnode.Id))
+
+                                ).Select(s => s.Value.Distance ).FirstOrDefault();
+
+                        totaldistance += dist;
+
+
+                        PathNode prevNode = GetNodeWithId(currentnode.PreviousNodeId);
+                        if (prevNode == null)
+                            break;
+
+                        currentnode = prevNode;
+                    }
+                }
+            }
+
+            toolStripStatusLabelResult.Text = "Solution Distance: " + totaldistance.ToString();
+        }
+
+        /**************************************************************************
         * Set the selected node to the START node 
         ***************************************************************************/
         private void toolStripMenuSTART_Click(object sender, EventArgs e)
@@ -644,6 +691,8 @@ namespace PathFinder
 
             } // while(!finished)
 
+            DisplayResult();
+
             pbCanvas.Invalidate();
 
         } //DIJKSTRAToolStripMenuItem_Click
@@ -695,6 +744,10 @@ namespace PathFinder
                     // If it is flows both ways, then its ok.
                     // If it flows against the direction that we are moving, then skip.
                     if (!((p.Direction == NodeLink.DirectionType.biDirectional) || (p.StartNodeId == startNode.Id)))
+                        continue;
+
+                    // if our link is blocked, then do not try to use
+                    if (p.DistType == NodeLink.DistanceType.BlockingDistance)
                         continue;
 
                     // The ids of our source and destination nodes can be either of the two id properties.
@@ -754,6 +807,8 @@ namespace PathFinder
                     finished = true;
 
             } // while(!finished)
+
+            DisplayResult();
 
             pbCanvas.Invalidate();
         } // ASTAR_ToolStripMenuItem_Click
@@ -1140,17 +1195,45 @@ namespace PathFinder
             pbCanvas.Invalidate();
         }
 
+
+        /**************************************************************************
+        * mouse double-click handler 
+        * 
+        * - Add new node on whitespace
+        * - Open object property dialog if object clicked
+        ***************************************************************************/
         private void pbCanvas_DoubleClick(object sender, EventArgs e)
         {
             Point mouseP = Cursor.Position;
             mouseP = pbCanvas.PointToClient(mouseP);
 
-            // Add to canvas
-            clearSelectedItems();
-            PathNode newnode = CreateNewNode(mouseP);
-            _nodecollection.Add(newnode.Id, newnode);
-            doSelectItem(ref newnode);
-            pbCanvas.Invalidate();
+            // This returns the id of the node. -1 otherwise.
+            // If we have clicked in any whitespace, add new item
+
+            NodeLink link = null;
+            int hittestid = HitTest_NodeId(mouseP);
+            if (hittestid < 0)
+            {
+                link = HitTest_Link(mouseP);
+
+                if (link == null)
+                {
+                    // Add to canvas
+                    clearSelectedItems();
+                    PathNode newnode = CreateNewNode(mouseP);
+                    _nodecollection.Add(newnode.Id, newnode);
+                    doSelectItem(ref newnode);
+                    pbCanvas.Invalidate();
+                    return;
+                }
+            }
+
+            if(link != null)
+            {
+                var form = new LinkPropertyForm();
+                form.Link = link;
+                form.ShowDialog();
+            }
         }
 
 
@@ -1163,11 +1246,12 @@ namespace PathFinder
             clearSelectedItems();
             resetNodeStates();
 
-            //foreach (var n in _nodecollection)
-            //{
-            //    n.Value.StartNode = false;
-            //    n.Value.EndNode = false;
-            //}
+            // recalculate the distances
+            foreach (var links in _linkcollection)
+            {
+                updateLinkDistancesForNode(links.Key.Key);
+            }
+
             pbCanvas.Invalidate();
         }
 

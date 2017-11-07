@@ -20,11 +20,19 @@ namespace PathFinder
             uniDirectional
         }
 
+        public enum DistanceType
+        {
+            AutoDistance,
+            BlockingDistance,
+            UserDefinedDistance
+        }
+
         public NodeLink()
         {
             StartNodeId = EndNodeId = -1;
             Distance = 1.0F;
             Direction = DirectionType.biDirectional;
+            DistType = DistanceType.AutoDistance;
         }
 
         public NodeLink(PathNode start, PathNode end, DirectionType t = DirectionType.uniDirectional)
@@ -45,6 +53,23 @@ namespace PathFinder
 
         // selection rectangle
         private Rectangle _selectionRect = new Rectangle();
+
+        private DistanceType _distancetype = DistanceType.AutoDistance;
+        public DistanceType DistType
+        {
+            get { return _distancetype;  }
+            set
+            {
+                _distancetype = value;
+
+                // If this is a blocking link, then make the distance 
+                // prohibatively large.
+                if(value == NodeLink.DistanceType.BlockingDistance)
+                {
+                    Distance = float.MaxValue;
+                }
+            }
+        }
 
         public override bool Equals(object obj)
         {
@@ -82,7 +107,9 @@ namespace PathFinder
             int horzDist = (_endPoint.X - _startPoint.X);
             int vertDist = (_endPoint.Y - _startPoint.Y);
 
-            Distance = (float)Math.Sqrt(horzDist * horzDist + vertDist * vertDist);
+            // Only update if this an 'auto' link
+            if(DistType == DistanceType.AutoDistance)
+                Distance = (float)Math.Sqrt(horzDist * horzDist + vertDist * vertDist);
 
             // update selection rect
             Point middle = new Point(_startPoint.X + (horzDist / 2), _startPoint.Y + (vertDist / 2));
@@ -133,16 +160,22 @@ namespace PathFinder
             using (Font labelFont = new Font("Tahoma", 10.0F))
             using (Brush labelBrush = new SolidBrush(Color.LightSeaGreen))
             using (Brush selectionBrush = new SolidBrush(Color.Gold))
-            using (Pen linePen = new Pen(Color.OliveDrab))
+            using (Pen linePen = new Pen(Color.MediumAquamarine))
             {
-                AdjustableArrowCap deepArrow = new AdjustableArrowCap(6, 6, true);
 
-                linePen.CustomEndCap = deepArrow;
-                linePen.Width = 1.5F;
-                if (Direction == DirectionType.biDirectional)
+                if (DistType == DistanceType.BlockingDistance)
                 {
-                    linePen.CustomStartCap = deepArrow;
-                    linePen.Color = Color.MediumAquamarine;
+                    linePen.Color = Color.FromArgb(128, 128, 128); // Color.FromArgb(76, 90,114);
+                    linePen.Width = 3.0F;
+                }
+                else
+                {
+                    linePen.Width = 1.5F;
+
+                    AdjustableArrowCap deepArrow = new AdjustableArrowCap(6, 6, true);
+                    linePen.CustomEndCap = deepArrow;
+                    if (Direction == DirectionType.biDirectional)
+                        linePen.CustomStartCap = deepArrow;
                 }
 
                 // Draw line between the two nodes.
@@ -157,7 +190,14 @@ namespace PathFinder
                 Point ePoint = GetIntersectionPoint(_endPoint, _startPoint);
 
                 graphics.DrawLine(linePen, sPoint, ePoint);
-                graphics.FillRectangle(new SolidBrush(linePen.Color), _selectionRect);
+
+                // Draw selection rectangle
+                // If it is auto calculated, then draw an open rectangle. Else draw a 
+                // filled rectangle.
+                if(DistType == DistanceType.AutoDistance)
+                    graphics.DrawRectangle(linePen, _selectionRect);
+                else
+                    graphics.FillRectangle(new SolidBrush(linePen.Color), _selectionRect);
 
 
 
@@ -171,20 +211,27 @@ namespace PathFinder
                 // 
                 if (showlabels)
                 {
-                    String label = $"{Distance:0.#}";
-                    SizeF labelSize = graphics.MeasureString(label, labelFont);
+                    if (Distance != float.MaxValue)
+                    {
+                        String label = $"{Distance:0.#}";
+                        SizeF labelSize = graphics.MeasureString(label, labelFont);
 
-                    int midX = Math.Abs(ePoint.X - sPoint.X) / 2 + Math.Min(sPoint.X, ePoint.X);
-                    int midY = Math.Abs(ePoint.Y - sPoint.Y) / 2 + Math.Min(sPoint.Y, ePoint.Y);
-                    Point labelPoint = new Point(midX - (int)labelSize.Width, midY - (int)labelSize.Height);
+                        int midX = Math.Abs(ePoint.X - sPoint.X) / 2 + Math.Min(sPoint.X, ePoint.X);
+                        int midY = Math.Abs(ePoint.Y - sPoint.Y) / 2 + Math.Min(sPoint.Y, ePoint.Y);
+                        Point labelPoint = new Point(midX - (int)labelSize.Width, midY - (int)labelSize.Height);
 
-                    graphics.DrawString(label, labelFont, labelBrush, labelPoint);
+                        graphics.DrawString(label, labelFont, labelBrush, labelPoint);
+                    }
                 }
 
             } // using
 
         } // Draw
 
+        public bool HitTest(Point p)
+        {
+            return _selectionRect.Contains(p);
+        }
 
         /**************************************************************************
         * Returns the intersection point for the given node 

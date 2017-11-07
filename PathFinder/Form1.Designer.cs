@@ -42,22 +42,24 @@
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.clearToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.statusbar = new System.Windows.Forms.StatusStrip();
+            this.toolStripStatusLabelResult = new System.Windows.Forms.ToolStripStatusLabel();
             this.menubar = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.saveToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.openToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.actionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.dijkstraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.dijkstraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.generateGridToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.generateCircularPatternToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showLabelsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.generateCircularPatternToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).BeginInit();
             this.pbContextMenu.SuspendLayout();
+            this.statusbar.SuspendLayout();
             this.menubar.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -159,11 +161,21 @@
             // 
             // statusbar
             // 
+            this.statusbar.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.toolStripStatusLabelResult});
             this.statusbar.Location = new System.Drawing.Point(0, 609);
             this.statusbar.Name = "statusbar";
             this.statusbar.Size = new System.Drawing.Size(884, 22);
             this.statusbar.TabIndex = 1;
             this.statusbar.Text = "statusStrip1";
+            // 
+            // toolStripStatusLabelResult
+            // 
+            this.toolStripStatusLabelResult.BackColor = System.Drawing.Color.Transparent;
+            this.toolStripStatusLabelResult.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripStatusLabelResult.Name = "toolStripStatusLabelResult";
+            this.toolStripStatusLabelResult.Size = new System.Drawing.Size(39, 17);
+            this.toolStripStatusLabelResult.Text = "Result";
             // 
             // menubar
             // 
@@ -212,32 +224,32 @@
             this.actionToolStripMenuItem.Size = new System.Drawing.Size(54, 20);
             this.actionToolStripMenuItem.Text = "Action";
             // 
-            // dijkstraToolStripMenuItem
-            // 
-            this.dijkstraToolStripMenuItem.Name = "dijkstraToolStripMenuItem";
-            this.dijkstraToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F3;
-            this.dijkstraToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.dijkstraToolStripMenuItem.Text = "Dijkstra";
-            this.dijkstraToolStripMenuItem.Click += new System.EventHandler(this.DIJKSTRAToolStripMenuItem_Click);
-            // 
             // aToolStripMenuItem
             // 
             this.aToolStripMenuItem.Name = "aToolStripMenuItem";
             this.aToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F4;
-            this.aToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.aToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
             this.aToolStripMenuItem.Text = "A*";
             this.aToolStripMenuItem.Click += new System.EventHandler(this.ASTAR_ToolStripMenuItem_Click);
+            // 
+            // dijkstraToolStripMenuItem
+            // 
+            this.dijkstraToolStripMenuItem.Name = "dijkstraToolStripMenuItem";
+            this.dijkstraToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F3;
+            this.dijkstraToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.dijkstraToolStripMenuItem.Text = "Dijkstra";
+            this.dijkstraToolStripMenuItem.Click += new System.EventHandler(this.DIJKSTRAToolStripMenuItem_Click);
             // 
             // toolStripSeparator5
             // 
             this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(149, 6);
+            this.toolStripSeparator5.Size = new System.Drawing.Size(129, 6);
             // 
             // refreshToolStripMenuItem
             // 
             this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
             this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
             this.refreshToolStripMenuItem.Text = "Refresh";
             this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
             // 
@@ -257,6 +269,13 @@
             this.generateGridToolStripMenuItem.Text = "Generate using Grid Pattern...";
             this.generateGridToolStripMenuItem.Click += new System.EventHandler(this.generateGridToolStripMenuItem_Click);
             // 
+            // generateCircularPatternToolStripMenuItem
+            // 
+            this.generateCircularPatternToolStripMenuItem.Name = "generateCircularPatternToolStripMenuItem";
+            this.generateCircularPatternToolStripMenuItem.Size = new System.Drawing.Size(247, 22);
+            this.generateCircularPatternToolStripMenuItem.Text = "Generate using Circular Pattern...";
+            this.generateCircularPatternToolStripMenuItem.Click += new System.EventHandler(this.generateCircularPatternToolStripMenuItem_Click);
+            // 
             // optionsToolStripMenuItem
             // 
             this.optionsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -274,13 +293,6 @@
             this.showLabelsToolStripMenuItem.Text = "Show Labels";
             this.showLabelsToolStripMenuItem.Click += new System.EventHandler(this.showLabelsToolStripMenuItem_Click);
             // 
-            // generateCircularPatternToolStripMenuItem
-            // 
-            this.generateCircularPatternToolStripMenuItem.Name = "generateCircularPatternToolStripMenuItem";
-            this.generateCircularPatternToolStripMenuItem.Size = new System.Drawing.Size(247, 22);
-            this.generateCircularPatternToolStripMenuItem.Text = "Generate using Circular Pattern...";
-            this.generateCircularPatternToolStripMenuItem.Click += new System.EventHandler(this.generateCircularPatternToolStripMenuItem_Click);
-            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -297,6 +309,8 @@
             this.KeyUp += new System.Windows.Forms.KeyEventHandler(this.Form1_KeyUp);
             ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).EndInit();
             this.pbContextMenu.ResumeLayout(false);
+            this.statusbar.ResumeLayout(false);
+            this.statusbar.PerformLayout();
             this.menubar.ResumeLayout(false);
             this.menubar.PerformLayout();
             this.ResumeLayout(false);
@@ -333,6 +347,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem generateCircularPatternToolStripMenuItem;
+        private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelResult;
     }
 }
 
