@@ -12,47 +12,6 @@ using System.Text;
 namespace PathFinder
 {
     /**************************************************************************
-    * Link between two nodes 
-    ***************************************************************************/
-    [Serializable]
-    public class NodeLink
-    {
-        public enum DirectionType
-        {
-            biDirectional,
-            uniDirectional
-        }
-
-        public NodeLink()
-        {
-            StartNodeId = EndNodeId = -1;
-            Distance = 1.0F;
-            Direction = DirectionType.biDirectional;
-        }
-
-        public int StartNodeId { get; set; }
-        public int EndNodeId { get; set; }
-        public float Distance { get; set; }
-        public DirectionType Direction { get; set; }
-
-        public override bool Equals(object obj)
-        {
-            var link = obj as NodeLink;
-            return link != null &&
-                   StartNodeId == link.StartNodeId &&
-                   EndNodeId == link.EndNodeId;
-        }
-
-        public override int GetHashCode()
-        {
-            var hashCode = 1961402845;
-            hashCode = hashCode * -1521134295 + StartNodeId.GetHashCode();
-            hashCode = hashCode * -1521134295 + EndNodeId.GetHashCode();
-            return hashCode;
-        }
-    }
-
-    /**************************************************************************
     * Represents a node in our system 
     ***************************************************************************/
     [Serializable]
@@ -71,14 +30,15 @@ namespace PathFinder
         }
 
         // Colors
-        public Color colorDefault   = Color.WhiteSmoke;
-        public Color colorSelected  = Color.FromArgb(255, 192, 0);
+        public Color colorSelected = Color.Gold;
         public Color colorStartNode = Color.RoyalBlue;
         public Color colorEndNode   = Color.Crimson;
         public Color colorVisited   = Color.DimGray;
+        public Color colorBorder    = Color.FromArgb(86, 88, 87);
+        public Color colorDefault   = Color.FromArgb(216, 212, 207);
 
         protected Rectangle _boundingRectangle;
-        protected Size nodeSize = new Size(25, 25);
+        protected Size nodeSize = new Size(35, 35);
 
         // ====================================
         // MAIN PROPERTIES OF OUR NODE
@@ -152,6 +112,7 @@ namespace PathFinder
             // The color will depend on its current state. Lets determine its colour based on state precidence
             Pen myPen;
             Color penColor = colorDefault;
+            Color penBorder = colorBorder;
 
             if (Visited)
                 penColor = colorVisited;
@@ -163,13 +124,22 @@ namespace PathFinder
                 penColor = colorStartNode;
 
             if (IsSelected)
-                penColor = colorSelected;
+                penBorder = colorSelected;
 
 
             // Draw our node as a circle
-            myPen = new Pen(penColor);
-            myPen.Width = 4.0F;
-            g.DrawEllipse(myPen, X - nodeSize.Width / 2, Y - nodeSize.Height / 2, nodeSize.Width, nodeSize.Height);
+            Brush myBrush = new SolidBrush(penColor);
+            myPen = new Pen(penBorder);
+            myPen.Width = 3.0F;
+
+            int circumference = NodeSize.Width;
+            int radius = circumference / 2;
+
+            g.DrawEllipse(myPen, X - radius, Y - radius, circumference, circumference);
+
+            circumference = (circumference * 1) / 2;
+            radius = circumference / 2;
+            g.FillEllipse(myBrush, X - radius, Y - radius, circumference, circumference);
 
             // Draw the node's score
             // Display, just about the bounding rectangle
@@ -177,7 +147,8 @@ namespace PathFinder
             {
                 if (this.Score < float.MaxValue)
                 {
-                    String label = $"Id: {this.Id}\r\nScore: {this.Score:0.#}";
+                    //String label = $"Id: {this.Id}\r\nScore: {this.Score:0.#}";
+                    String label = $"Score: {this.Score:0.#}";
                     SizeF labelSize = g.MeasureString(label, labelFont);
 
                     g.DrawString(label,

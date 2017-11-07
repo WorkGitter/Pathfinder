@@ -49,12 +49,13 @@
             this.actionToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dijkstraToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
+            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.generateGridToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.optionsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.showLabelsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
-            this.refreshToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.generateCircularPatternToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             ((System.ComponentModel.ISupportInitialize)(this.pbCanvas)).BeginInit();
             this.pbContextMenu.SuspendLayout();
             this.menubar.SuspendLayout();
@@ -65,7 +66,7 @@
             this.pbCanvas.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.pbCanvas.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(32)))), ((int)(((byte)(32)))), ((int)(((byte)(32)))));
+            this.pbCanvas.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(42)))), ((int)(((byte)(42)))), ((int)(((byte)(42)))));
             this.pbCanvas.ContextMenuStrip = this.pbContextMenu;
             this.pbCanvas.Location = new System.Drawing.Point(12, 37);
             this.pbCanvas.Name = "pbCanvas";
@@ -203,8 +204,8 @@
             // actionToolStripMenuItem
             // 
             this.actionToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.dijkstraToolStripMenuItem,
             this.aToolStripMenuItem,
+            this.dijkstraToolStripMenuItem,
             this.toolStripSeparator5,
             this.refreshToolStripMenuItem});
             this.actionToolStripMenuItem.Name = "actionToolStripMenuItem";
@@ -227,10 +228,24 @@
             this.aToolStripMenuItem.Text = "A*";
             this.aToolStripMenuItem.Click += new System.EventHandler(this.ASTAR_ToolStripMenuItem_Click);
             // 
+            // toolStripSeparator5
+            // 
+            this.toolStripSeparator5.Name = "toolStripSeparator5";
+            this.toolStripSeparator5.Size = new System.Drawing.Size(149, 6);
+            // 
+            // refreshToolStripMenuItem
+            // 
+            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
+            this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
+            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
+            this.refreshToolStripMenuItem.Text = "Refresh";
+            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            // 
             // toolsToolStripMenuItem
             // 
             this.toolsToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.generateGridToolStripMenuItem});
+            this.generateGridToolStripMenuItem,
+            this.generateCircularPatternToolStripMenuItem});
             this.toolsToolStripMenuItem.Name = "toolsToolStripMenuItem";
             this.toolsToolStripMenuItem.Size = new System.Drawing.Size(47, 20);
             this.toolsToolStripMenuItem.Text = "Tools";
@@ -238,8 +253,8 @@
             // generateGridToolStripMenuItem
             // 
             this.generateGridToolStripMenuItem.Name = "generateGridToolStripMenuItem";
-            this.generateGridToolStripMenuItem.Size = new System.Drawing.Size(155, 22);
-            this.generateGridToolStripMenuItem.Text = "Generate Grid...";
+            this.generateGridToolStripMenuItem.Size = new System.Drawing.Size(247, 22);
+            this.generateGridToolStripMenuItem.Text = "Generate using Grid Pattern...";
             this.generateGridToolStripMenuItem.Click += new System.EventHandler(this.generateGridToolStripMenuItem_Click);
             // 
             // optionsToolStripMenuItem
@@ -259,18 +274,12 @@
             this.showLabelsToolStripMenuItem.Text = "Show Labels";
             this.showLabelsToolStripMenuItem.Click += new System.EventHandler(this.showLabelsToolStripMenuItem_Click);
             // 
-            // toolStripSeparator5
+            // generateCircularPatternToolStripMenuItem
             // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(149, 6);
-            // 
-            // refreshToolStripMenuItem
-            // 
-            this.refreshToolStripMenuItem.Name = "refreshToolStripMenuItem";
-            this.refreshToolStripMenuItem.ShortcutKeys = System.Windows.Forms.Keys.F5;
-            this.refreshToolStripMenuItem.Size = new System.Drawing.Size(152, 22);
-            this.refreshToolStripMenuItem.Text = "Refresh";
-            this.refreshToolStripMenuItem.Click += new System.EventHandler(this.refreshToolStripMenuItem_Click);
+            this.generateCircularPatternToolStripMenuItem.Name = "generateCircularPatternToolStripMenuItem";
+            this.generateCircularPatternToolStripMenuItem.Size = new System.Drawing.Size(247, 22);
+            this.generateCircularPatternToolStripMenuItem.Text = "Generate using Circular Pattern...";
+            this.generateCircularPatternToolStripMenuItem.Click += new System.EventHandler(this.generateCircularPatternToolStripMenuItem_Click);
             // 
             // Form1
             // 
@@ -323,6 +332,7 @@
         private System.Windows.Forms.ToolStripMenuItem showLabelsToolStripMenuItem;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
         private System.Windows.Forms.ToolStripMenuItem refreshToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem generateCircularPatternToolStripMenuItem;
     }
 }
 

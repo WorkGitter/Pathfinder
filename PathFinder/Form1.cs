@@ -244,6 +244,10 @@ namespace PathFinder
                     p.Y += offsetY;
 
                     selNode.SetPosition(p);
+
+                    // update links
+                    updateLinkDistancesForNode(selId);
+
                     pbCanvas.Invalidate();
                 }
 
@@ -365,9 +369,7 @@ namespace PathFinder
 
         /**************************************************************************
         * PictureBox paint handler 
-        * 
-        * Responsible for rendering the graph to the screen.
-        * 
+        * Responsible for rendering all items on the graph to the screen
         ***************************************************************************/
         private void pbCanvas_Paint(object sender, PaintEventArgs e)
         {
@@ -375,7 +377,7 @@ namespace PathFinder
             graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
             Pen drawingLinePen = new Pen(Color.Coral);
-            Pen solutionLinePen = new Pen(Color.RoyalBlue);
+            Pen solutionLinePen = new Pen(Color.FromArgb(255, 22, 84));
             Pen selectionPen = new Pen(Color.Yellow);
 
             // directional pens
@@ -397,70 +399,18 @@ namespace PathFinder
             Font labelFont = new Font("Tahoma", 10.0F);
             Brush labelBrush = new SolidBrush(Color.LightSeaGreen);
 
-
+            // Draw the background grid
             draw_Grid(ref graphics);
-
-            // Draw the node link lines
-            // EXPERIMENTAL : Weighting or distance colouring
-            //
-            float maxdist = (float)Math.Sqrt((pbCanvas.Height * pbCanvas.Height) + (pbCanvas.Width * pbCanvas.Width));
 
             foreach (var link in _linkcollection)
             {
-                PathNode sN = GetNodeWithId(link.Value.StartNodeId);
-                PathNode eN = GetNodeWithId(link.Value.EndNodeId);
-                if ((sN == null) || (eN == null))
-                    continue;
-
-                /*
-                // Calculate colour of link, based on its distance
-                float ratio = 1.0f - (link.Value.Distance / maxdist);
-                if (ratio < 0.0) ratio = 0.0f;
-                if (ratio > 1.0f) ratio = 1.0f;
-
-                Pen colourPen = new Pen(Color.FromArgb((int)((1 - ratio) * 255), (int)(ratio * 255), 0));
-
-                colourPen.CustomEndCap = deepArrow;
-                colourPen.Width = 3.0F;
-
-                if (link.Value.Direction == NodeLink.DirectionType.biDirectional)
-                    colourPen.CustomStartCap = deepArrow;
-
-                graphics.DrawLine(colourPen, sN.GetPosition(), eN.GetPosition());
-                colourPen.Dispose();
-                */
-
-                if (link.Value.Direction == NodeLink.DirectionType.biDirectional)
-                    graphics.DrawLine(biDirectionalLinePen, sN.GetPosition(), eN.GetPosition());
-                else
-                    graphics.DrawLine(uniDirectionalLinePen, sN.GetPosition(), eN.GetPosition());
-                
-                // Draws the path label. This will be the distance between nodes, as stored in the label.
-                // We want our string to be positions midway between the nodes.
-                //
-                // (b)
-                //    \[label]
-                //     \
-                //     (a)
-                // 
-                if (_showlabels)
-                {
-                    String label = $"{link.Value.Distance:0.#}";
-                    SizeF labelSize = graphics.MeasureString(label, labelFont);
-
-                    int midX = Math.Abs(eN.X - sN.X) / 2 + Math.Min(sN.X, eN.X);
-                    int midY = Math.Abs(eN.Y - sN.Y) / 2 + Math.Min(sN.Y, eN.Y);
-                    Point labelPoint = new Point(midX - (int)labelSize.Width, midY - (int)labelSize.Height);
-
-                    graphics.DrawString(label, labelFont, labelBrush, labelPoint);
-                }
+                link.Value.Draw(ref graphics, _showlabels);
             }
 
             // Draw our nodes
             foreach (var node in _nodecollection)
-            {
                 node.Value.Draw(ref graphics, _showlabels);
-            }
+
 
             // SOLUTION PATH LINK
             // If we have a solution path, then draw the lines here, using a different 
@@ -992,6 +942,7 @@ namespace PathFinder
             }
         }
 
+        #region PATTERN_GENERATOR
 
         /**************************************************************************
         * Generate square grid 
@@ -1002,45 +953,101 @@ namespace PathFinder
             int y = pbCanvas.Height;
            
             int[,] grid = new int[x, y];
-            
-            int offset = 75;
-            int wsize = x / offset;
-            int hsize = y / offset;
-            
+
+            int nodeWidth = (new PathNode()).NodeSize.Width;
+            int padding = nodeWidth * 2;
+            int xcount = x / (nodeWidth + padding);
+            int ycount = y / (nodeWidth + padding);
+            int xspacing = (x - (((nodeWidth + padding) * xcount) - padding)) / 2;
+            int yspacing = (y - (((nodeWidth + padding) * ycount) - padding)) / 2;
+
             // generate nodes
-            for(int j = 0; j < hsize; j++)
+            for (int j = 0; j < ycount; j++)
             {
-                for(int i = 0; i < wsize; i++)
+                for (int i = 0; i < xcount; i++)
                 {
-                    PathNode newnode = CreateNewNode(i * offset + offset, j * offset + offset);
+                    PathNode newnode = CreateNewNode(   (i * (nodeWidth + padding)) + (nodeWidth / 2) + xspacing,
+                                                        (j * (nodeWidth + padding)) + (nodeWidth / 2) + yspacing);
                     _nodecollection[newnode.Id] = newnode;
                     grid[i, j] = newnode.Id;
                 }
             }
 
             // Add Horizontal Links
-            for (int j = 0; j < hsize; j++)
+            for (int j = 0; j < ycount; j++)
             {
-                for (int i = 0; i < wsize - 1; i++)
+                for (int i = 0; i < xcount - 1; i++)
                 {
                     addLinksForNode(grid[i, j], grid[i + 1, j], true);
                 }
             }
 
             // Add Vertical Links
-            for (int i = 0; i < wsize; i++) 
+            for (int i = 0; i < xcount; i++) 
             {
-                for (int j = 0; j < hsize - 1; j++)
+                for (int j = 0; j < ycount - 1; j++)
                 {
                     addLinksForNode(grid[i, j], grid[i, j + 1], true);
                 }
             }
 
-
             pbCanvas.Invalidate();
         } // generateGridToolStripMenuItem_Click
 
 
+        
+        /**************************************************************************
+        * Circular Pattern  
+        ***************************************************************************/
+        private void generateCircularPatternToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            int width = pbCanvas.Width;
+            int height = pbCanvas.Height;
+
+            int canvasradius = (int)Math.Min(width, height) / 2;
+
+            int centreX = width / 2;
+            int centreY = height / 2;
+
+            int nodewidth = (new PathNode()).NodeSize.Width;
+            int padding = nodewidth * 2;
+
+            canvasradius -= (nodewidth);
+
+            for (int k = 0; k < 2; k++)
+            {
+
+                double c = Math.PI * canvasradius * 2;
+                int count = (int)(c / (nodewidth + padding));
+                double angledelta = 360 / count;
+
+                double angle = 0;
+                int previd = -1;
+                for (int n = 0; n < count; n++)
+                {
+                    angle += angledelta;
+                    double rad = Math.PI * angle / 180.0;
+
+                    int nX = (int)(Math.Cos(rad) * canvasradius);
+                    int nY = (int)(Math.Sin(rad) * canvasradius);
+
+                    PathNode newnode = CreateNewNode(nX + centreX, nY + centreY);
+                    _nodecollection[newnode.Id] = newnode;
+
+                    if (previd >= 0)
+                    {
+                        addLinksForNode(previd, newnode.Id, true);
+                    }
+                    previd = newnode.Id;
+                }
+
+                canvasradius /= 2;
+            }
+
+            pbCanvas.Invalidate();
+        }
+
+        #endregion
 
         #region NODE LINK MANAGEMENT
 
@@ -1094,14 +1101,7 @@ namespace PathFinder
             if ((a == null) || (b == null))
                 return;
 
-            float dist = calculateDistanceBetweenNodes(a, b);
-            NodeLink newlink = new NodeLink();
-            newlink.StartNodeId = startnodeid;
-            newlink.EndNodeId = endnodeid;
-            newlink.Distance = dist;
-
-            // set link direction
-            newlink.Direction = bidirectional ? NodeLink.DirectionType.biDirectional : NodeLink.DirectionType.uniDirectional;
+            NodeLink newlink = new NodeLink(a, b, bidirectional ? NodeLink.DirectionType.biDirectional : NodeLink.DirectionType.uniDirectional);
 
             // Add to collection
             // use the [] operator to prevent any exception thrown. If we have duplicates, then
@@ -1110,7 +1110,7 @@ namespace PathFinder
         }
 
         /// <summary>
-        /// 
+        /// Recalculate node distances
         /// </summary>
         /// <param name="startnodeid"></param>
         private void updateLinkDistancesForNode(int startnodeid)
@@ -1128,10 +1128,7 @@ namespace PathFinder
                 if ((s == null) || (e == null))
                     continue;
 
-                float dist = calculateDistanceBetweenNodes(s, e);
-
-                // update this link's distance
-                a.Distance = dist;
+                a.UpdateConnection(s, e);
             }
         }
         #endregion
@@ -1162,15 +1159,15 @@ namespace PathFinder
         ***************************************************************************/
         private void refreshToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            _startNodeId = _endNodeId = -1;
+            //_startNodeId = _endNodeId = -1;
             clearSelectedItems();
             resetNodeStates();
 
-            foreach (var n in _nodecollection)
-            {
-                n.Value.StartNode = false;
-                n.Value.EndNode = false;
-            }
+            //foreach (var n in _nodecollection)
+            //{
+            //    n.Value.StartNode = false;
+            //    n.Value.EndNode = false;
+            //}
             pbCanvas.Invalidate();
         }
 
