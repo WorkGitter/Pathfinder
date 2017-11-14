@@ -677,6 +677,9 @@ namespace PathFinder
                 foreach(var s in _unvisitedNodesSet)
                 {
                     PathNode pn = GetNodeWithId(s);
+                    if (pn == null)
+                        continue;
+
                     if(pn.Score < minScore)
                     {
                         startNode = pn;
@@ -794,6 +797,9 @@ namespace PathFinder
                 foreach (var s in _unvisitedNodesSet)
                 {
                     PathNode pn = GetNodeWithId(s);
+                    if (pn == null)
+                        continue;
+
                     if (pn.Score < minScore)
                     {
                         startNode = pn;
